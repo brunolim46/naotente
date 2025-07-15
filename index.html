@@ -1,80 +1,204 @@
-<!-- Barra de desbloqueio -->
-<div style="margin-top: 60px;">
-  <h2>⚠️ Não arraste!</h2>
-  <div id="slider-container">
-    <div id="slider-track">
-      <div id="slider-button">👉</div>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Corrida - Conquista e Consolação</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #222; color: white; text-align: center; font-family: sans-serif; }
+    h1, h2 { margin: 20px 0; }
+    #gameCanvas {
+      background: #333;
+      display: block;
+      margin: 20px auto;
+      border: 3px solid #555;
+    }
+    #scoreText, #livesText {
+      font-size: 18px;
+      margin-top: 10px;
+    }
+    #consolation {
+      margin-top: 30px;
+      display: none;
+    }
+    #consolation p {
+      margin-bottom: 10px;
+    }
+    #consolation a {
+      background: #f39c12;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    #consolation a:hover {
+      background: #e67e22;
+    }
+    #intro {
+      margin-top: 100px;
+    }
+    #intro button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #intro button:hover {
+      background: #2980b9;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Tela de introdução -->
+  <div id="intro" style="display: none;">
+    <h2>🔒 Jogo de Corrida</h2>
+    <p>Para melhor experiência, abra este site em um computador ou notebook.</p>
+    <button onclick="startGame()">Continuar mesmo assim</button>
+  </div>
+
+  <!-- Área do jogo -->
+  <div id="gameArea" style="display: none;">
+    <h1>🚗 Corrida - Desvie e conquiste!</h1>
+    <div id="scoreText">Pontuação: 0 – Faça 20 pontos para desbloquear a conquista</div>
+    <div id="livesText">Vidas restantes: 5</div>
+    <canvas id="gameCanvas" width="300" height="500"></canvas>
+
+    <div id="consolation">
+      <p>Já que você não é um bom piloto, fique com seu prêmio de consolação:</p>
+      <a href="https://www.tiktok.com/@skatingduosb/video/7221047946538749189" target="_blank">🎁 Receber prêmio</a>
     </div>
   </div>
-</div>
 
-<style>
-  #slider-container {
-    width: 300px;
-    margin: 0 auto;
-    user-select: none;
-  }
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-  #slider-track {
-    background: #ddd;
-    height: 50px;
-    border-radius: 25px;
-    position: relative;
-    overflow: hidden;
-  }
+    const car = {
+      x: 125,
+      y: 400,
+      width: 50,
+      height: 80,
+      color: '#0f0'
+    };
 
-  #slider-button {
-    background: #4CAF50;
-    color: white;
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
+    let obstacles = [];
+    let score = 0;
+    let lives = 5;
+    let gameOver = false;
 
-  #slider-button:active {
-    background: #388e3c;
-  }
-</style>
-
-<script>
-  const button = document.getElementById("slider-button");
-  const track = document.getElementById("slider-track");
-  let isDragging = false;
-
-  button.addEventListener("mousedown", startDrag);
-  document.addEventListener("mouseup", stopDrag);
-  document.addEventListener("mousemove", drag);
-
-  function startDrag(e) {
-    isDragging = true;
-  }
-
-  function stopDrag(e) {
-    if (isDragging) {
-      // Se não chegou ao final, volta
-      button.style.left = "0px";
+    function drawCar() {
+      ctx.fillStyle = car.color;
+      ctx.fillRect(car.x, car.y, car.width, car.height);
     }
-    isDragging = false;
-  }
 
-  function drag(e) {
-    if (!isDragging) return;
-    const trackRect = track.getBoundingClientRect();
-    let newLeft = e.clientX - trackRect.left - button.offsetWidth / 2;
-    newLeft = Math.max(0, Math.min(newLeft, track.offsetWidth - button.offsetWidth));
-    button.style.left = newLeft + "px";
-
-    // Se chegou ao fim, redireciona
-    if (newLeft >= track.offsetWidth - button.offsetWidth - 5) {
-      window.location.href = "https://youtube.com/shorts/tDEjuIhBHg0?feature=share";
+    function drawObstacle(ob) {
+      ctx.fillStyle = '#f00';
+      ctx.fillRect(ob.x, ob.y, ob.width, ob.height);
     }
-  }
-</script>
+
+    function generateObstacle() {
+      const width = 50;
+      const x = Math.floor(Math.random() * (canvas.width - width));
+      obstacles.push({ x, y: -80, width, height: 80 });
+    }
+
+    function resetGame() {
+      car.x = 125;
+      obstacles = [];
+      score = 0;
+      gameOver = false;
+      updateHUD();
+    }
+
+    function updateHUD() {
+      document.getElementById('scoreText').textContent =
+        `Pontuação: ${score} – Faça 20 pontos para desbloquear a conquista`;
+      document.getElementById('livesText').textContent =
+        `Vidas restantes: ${lives}`;
+    }
+
+    function updateGame() {
+      if (gameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawCar();
+
+      obstacles.forEach((ob, i) => {
+        ob.y += 5;
+        drawObstacle(ob);
+
+        // Colisão
+        if (
+          ob.y + ob.height > car.y &&
+          ob.y < car.y + car.height &&
+          ob.x < car.x + car.width &&
+          ob.x + ob.width > car.x
+        ) {
+          lives--;
+          updateHUD();
+
+          if (lives > 0) {
+            alert("Você bateu! Reiniciando...");
+            resetGame();
+          } else {
+            gameOver = true;
+            document.getElementById('consolation').style.display = 'block';
+          }
+        }
+
+        // Passou obstáculo
+        if (ob.y > canvas.height) {
+          obstacles.splice(i, 1);
+          score++;
+          updateHUD();
+
+          if (score >= 20) {
+            window.location.href = "https://www.tiktok.com/@skatingduosb/video/7221047946538749189";
+          }
+        }
+      });
+
+      if (!gameOver) requestAnimationFrame(updateGame);
+    }
+
+    function moveCar(e) {
+      const step = 20;
+      if (e.key === 'ArrowLeft' && car.x > 0) {
+        car.x -= step;
+      }
+      if (e.key === 'ArrowRight' && car.x < canvas.width - car.width) {
+        car.x += step;
+      }
+    }
+
+    document.addEventListener('keydown', moveCar);
+
+    setInterval(() => {
+      if (!gameOver) generateObstacle();
+    }, 1000);
+
+    function startGame() {
+      document.getElementById('intro').style.display = 'none';
+      document.getElementById('gameArea').style.display = 'block';
+      resetGame();
+      updateGame();
+    }
+
+    // Mostrar introdução se for celular
+    if (window.innerWidth < 600 || /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+      document.getElementById('intro').style.display = 'block';
+    } else {
+      startGame();
+    }
+  </script>
+</body>
+</html>
